@@ -1,0 +1,12 @@
+<launch>
+
+  <param name="camera_info" value="/top_right_rgbd_camera_2/rgb/camera_info" />
+  <param name="topic_crop" value="/top_right_rgbd_camera_2/rgb/image_raw" />
+  <param name="resize_width" value="640" />
+  <param name="resize_height" value="480" />
+
+  <!-- <node pkg = "image_proc" name = "image_proc2" type = "image_proc" ns='/top_right_rgbd_camera_2/rgb'/>  -->
+
+  <node name="ros_imresize_2" pkg="ros_imresize" type="ros_imresize" output="screen" />
+
+</launch>
