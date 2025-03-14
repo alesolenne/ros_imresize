@@ -1,12 +1,16 @@
 <launch>
 
-  <param name="camera_info" value="/camera/aligned_depth_to_color/camera_info" />
-  <param name="topic_crop" value="/camera/aligned_depth_to_color/image_raw" />
-  <param name="resize_width" value="300" />
-  <param name="resize_height" value="300" />
+  <node name="ros_imresize_depth" pkg="ros_imresize" type="ros_imresize" output="screen" >
 
-  <!-- <node pkg = "image_proc" name = "image_proc2" type = "image_proc" ns='/top_right_rgbd_camera_2/rgb'/>  -->
+    <param name="info_crop" value="/camera/aligned_depth_to_color/camera_info" />
+    <param name="image_crop" value="/camera/aligned_depth_to_color/image_raw" />
+    <param name="resize_width" value="640" />
+    <param name="resize_height" value="480" />
+    <param name="save_camera_info" value="false" />
+    <param name="desired_path" value="/catkin_ws/src/visp_megapose/params/camera.json" />
+    <param name="fps" value="30" />
+    <param name="undistord" value="true" />
 
-  <node name="ros_imresize_2" pkg="ros_imresize" type="ros_imresize" output="screen" />
+  </node>
 
 </launch>

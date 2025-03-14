@@ -10,7 +10,7 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <message_filters/subscriber.h>
 #include <image_transport/image_transport.h>
-
+#include <stdio.h>
 
 class SingleImageHandler
 {
@@ -37,14 +37,21 @@ protected:
     image_transport::Publisher _pub_img;
 
     ros::Publisher _pub_info;
+    ros::Subscriber _sub_info;
 
     cv::Mat _K;
     cv::Mat _dist;
 
-    bool set_img;
+    bool saveCameraInfo;
+    bool _undistord;
 
     int _width;
     int _height;
+    int fps;
+
+    std::string imgTopicName;
+    std::string infoTopicName;
+    std::string desired_path;
 
 };
 
