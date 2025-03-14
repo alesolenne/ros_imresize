@@ -53,7 +53,9 @@ SingleImageHandler::~SingleImageHandler()
 void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& received_image)
 {
     cv_bridge::CvImagePtr cvPtr;
-    cvPtr = cv_bridge::toCvCopy(received_image, sensor_msgs::image_encodings::RGB8);
+    const std::string encoding_image = received_image.get()->encoding;
+
+    cvPtr = cv_bridge::toCvCopy(received_image, received_image.get()->encoding);
        
     cv::Mat undist;
     undist = cvPtr->image;
