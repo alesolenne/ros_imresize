@@ -10,6 +10,7 @@
     <param name="desired_path" value="/catkin_ws/src/visp_megapose/params/camera.json" />
     <param name="fps" value="30" />
     <param name="undistord" value="true" />
+    <param name="resize" value="true" />
 
   </node>
 

@@ -2,13 +2,18 @@
   
   <node name="ros_imresize_color" pkg="ros_imresize" type="ros_imresize" output="screen" >
 
-    <param name="info_crop" value="/camera/color/camera_info" />
-    <param name="image_crop" value="/camera/color/image_raw" />
+    <param name="info_topic" value="/camera/color/camera_info" />
+    <param name="image_topic" value="/camera/color/image_raw" />
+    <param name="fps" value="30" />
+
+
+    <param name="resize" value="true" />
     <param name="resize_width" value="640" />
     <param name="resize_height" value="480" />
+
     <param name="save_camera_info" value="true" />
     <param name="desired_path" value="/catkin_ws/src/visp_megapose/params/camera.json" />
-    <param name="fps" value="30" />
+
     <param name="undistord" value="true" />
 
   </node>

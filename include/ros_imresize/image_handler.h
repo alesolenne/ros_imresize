@@ -44,6 +44,7 @@ protected:
 
     bool saveCameraInfo;
     bool _undistord;
+    bool _resize;
 
     int _width;
     int _height;
