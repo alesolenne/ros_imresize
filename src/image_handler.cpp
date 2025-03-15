@@ -48,7 +48,7 @@ _it(_nh)
         ROS_INFO("Undistortion and resize are set!");
     }
     else if (!_undistord && _resize){
-        new_image_topic_name = imgTopicName + "crop";
+        new_image_topic_name = imgTopicName + "raw_crop";
         ROS_INFO("Resize is set!");
     }
     else if (_undistord && !_resize){
@@ -151,6 +151,7 @@ void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& receive
 void SingleImageHandler::setCameraInfo(const sensor_msgs::CameraInfoConstPtr &received_info)
 {
     _infoCam = *received_info;
+
     if (_undistord)
     {
         _K = cv::Mat::eye(3, 3, CV_32F);
@@ -163,7 +164,7 @@ void SingleImageHandler::setCameraInfo(const sensor_msgs::CameraInfoConstPtr &re
 
         _dist = cv::Mat(_infoCam.D);
     }
-    
+
     if (_resize) {
 
         float scale_x = (float)(_width) / (float)(_infoCam.width);
@@ -185,9 +186,6 @@ void SingleImageHandler::setCameraInfo(const sensor_msgs::CameraInfoConstPtr &re
         _infoCam.height = _height;
 
     }
-
-
-
 
     ROS_INFO_STREAM_ONCE("Camera info received!");
 }
