@@ -49,6 +49,7 @@ _it(_nh)
     }
     else if (!_undistord && _resize){
         new_image_topic_name = imgTopicName + "raw_crop";
+        new_info_topic_name = infoTopicName + "_crop";
         ROS_INFO("Resize is set!");
     }
     else if (_undistord && !_resize){
