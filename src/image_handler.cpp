@@ -45,6 +45,7 @@ _it(_nh)
 
     if (_undistord && _resize){
         new_image_topic_name = imgTopicName + "rect_crop";
+        new_info_topic_name = infoTopicName + "_crop";
         ROS_INFO("Undistortion and resize are set!");
     }
     else if (!_undistord && _resize){
@@ -89,7 +90,6 @@ SingleImageHandler::~SingleImageHandler()
 void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& received_image)
 {
     cv_bridge::CvImagePtr cvPtr;
-    const std::string encoding_image = received_image.get()->encoding;
 
     cvPtr = cv_bridge::toCvCopy(received_image, received_image.get()->encoding);
        
