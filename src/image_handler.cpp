@@ -32,7 +32,7 @@ SingleImageHandler::SingleImageHandler()
 
     // Modify topic names based on settings
     imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // Remove "raw char"
-    std::string new_image_topic_name, new_info_topic_name;
+    string new_image_topic_name, new_info_topic_name;
 
     if (undistort && resize) {
         new_image_topic_name = imgTopicName + "rect_crop";
@@ -85,22 +85,22 @@ void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& receive
 
             char username[32];
             cuserid(username);
-            std::string username_str(username);
+            string username_str(username);
 
             if (!username) {
                 ROS_ERROR("Failed to get username. Skipping camera info save.");
                 return;
             }
 
-            std::ofstream output_file("/home/" + std::string(username) + desired_path);
+            ofstream output_file("/home/" + string(username) + desired_path);
             if (!output_file.is_open()) {
                 ROS_ERROR("Failed to open file for saving camera info.");
                 return;
             }
 
             json outJson;
-            outJson["K"] = std::vector<double>(infoCam.K.begin(), infoCam.K.end());
-            outJson["P"] = std::vector<double>(infoCam.P.begin(), infoCam.P.end());
+            outJson["K"] = vector<double>(infoCam.K.begin(), infoCam.K.end());
+            outJson["P"] = vector<double>(infoCam.P.begin(), infoCam.P.end());
             outJson["h"] = infoCam.height;
             outJson["w"] = infoCam.width;
 
@@ -110,7 +110,7 @@ void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& receive
             saveCameraInfo = false;
             ROS_INFO("Saved new camera calibration to camera.json file.");
         }
-    } catch (const std::exception& e) {
+    } catch (const exception& e) {
         ROS_ERROR("Error in topicCallback: %s", e.what());
     }
 }
