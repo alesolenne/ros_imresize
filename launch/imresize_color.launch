@@ -11,7 +11,7 @@
     <param name="resize_width" value="640" />
     <param name="resize_height" value="480" />
 
-    <param name="save_camera_info" value="true" />
+    <param name="save_camera_info" value="false" />
     <param name="desired_path" value="/catkin_ws/src/visp_megapose/params/camera.json" />
 
     <param name="undistort" value="false" />

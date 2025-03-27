@@ -41,8 +41,8 @@ protected:
     image_transport::Subscriber sub_img;
     image_transport::Publisher pub_img;
 
-    ros::Publisher pub_info;
     ros::Subscriber sub_info;
+    ros::Publisher pub_info;
 
     // Camera parameters
     cv::Mat K;  // Intrinsic camera matrix
