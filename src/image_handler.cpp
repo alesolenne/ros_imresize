@@ -28,7 +28,7 @@ SingleImageHandler::SingleImageHandler()
     }
 
     sub_info = nh.subscribe(infoTopicName, 1, &SingleImageHandler::setCameraInfo, this);
-    sub_img = it.subscribe(imgTopicName, 1, &SingleImageHandler::topicCallback, this);
+    sub_img = it.subscribe(imgTopicName, 1, &SingleImageHandler::setImage, this);
 
     // Modify topic names based on settings
     imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // Remove "raw char"
@@ -63,8 +63,10 @@ SingleImageHandler::~SingleImageHandler() {
     ROS_INFO("Shutting down node.");
 }
 
-void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& received_image) {
+void SingleImageHandler::setImage(const sensor_msgs::ImageConstPtr& received_image) {
     try {
+        ROS_INFO_STREAM_ONCE("Image received!");
+
         cv_bridge::CvImagePtr cvPtr = cv_bridge::toCvCopy(received_image, received_image->encoding);
         cv::Mat processed_image;
 
@@ -80,6 +82,7 @@ void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& receive
         }
 
         pub_img.publish(cvPtr->toImageMsg());
+        ROS_INFO_STREAM_ONCE("Image and Info processed!");
 
         if (saveCameraInfo) {
 
@@ -111,39 +114,44 @@ void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& receive
             ROS_INFO("Saved new camera calibration to camera.json file.");
         }
     } catch (const exception& e) {
-        ROS_ERROR("Error in topicCallback: %s", e.what());
+        ROS_ERROR("Error in setImage: %s", e.what());
     }
 }
 
 void SingleImageHandler::setCameraInfo(const sensor_msgs::CameraInfoConstPtr& received_info) {
-    infoCam = *received_info;
+    try {
 
-    if (undistort) {
-        K = cv::Mat::eye(3, 3, CV_32F);
-        K.at<float>(0, 0) = infoCam.K[0];
-        K.at<float>(0, 2) = infoCam.K[2];
-        K.at<float>(1, 1) = infoCam.K[4];
-        K.at<float>(1, 2) = infoCam.K[5];
-        dist = cv::Mat(infoCam.D);
+        infoCam = *received_info;
+
+        if (undistort) {
+            K = cv::Mat::eye(3, 3, CV_32F);
+            K.at<float>(0, 0) = infoCam.K[0];
+            K.at<float>(0, 2) = infoCam.K[2];
+            K.at<float>(1, 1) = infoCam.K[4];
+            K.at<float>(1, 2) = infoCam.K[5];
+            dist = cv::Mat(infoCam.D);
+        }
+
+        if (resize) {
+            float scale_x = static_cast<float>(width) / infoCam.width;
+            float scale_y = static_cast<float>(height) / infoCam.height;
+
+            infoCam.K[0] *= scale_x;
+            infoCam.K[2] *= scale_x;
+            infoCam.K[4] *= scale_y;
+            infoCam.K[5] *= scale_y;
+
+            infoCam.P[0] *= scale_x;
+            infoCam.P[2] *= scale_x;
+            infoCam.P[5] *= scale_y;
+            infoCam.P[6] *= scale_y;
+
+            infoCam.width = width;
+            infoCam.height = height;
+        }
+
+        ROS_INFO_STREAM_ONCE("Camera info received!");
+    } catch (const exception& e) {
+        ROS_ERROR("Error in setCameraInfo: %s", e.what());
     }
-
-    if (resize) {
-        float scale_x = static_cast<float>(width) / infoCam.width;
-        float scale_y = static_cast<float>(height) / infoCam.height;
-
-        infoCam.K[0] *= scale_x;
-        infoCam.K[2] *= scale_x;
-        infoCam.K[4] *= scale_y;
-        infoCam.K[5] *= scale_y;
-
-        infoCam.P[0] *= scale_x;
-        infoCam.P[2] *= scale_x;
-        infoCam.P[5] *= scale_y;
-        infoCam.P[6] *= scale_y;
-
-        infoCam.width = width;
-        infoCam.height = height;
-    }
-
-    ROS_INFO_STREAM_ONCE("Camera info received!");
 }

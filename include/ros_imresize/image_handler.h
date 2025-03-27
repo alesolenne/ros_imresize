@@ -22,15 +22,12 @@ public:
     SingleImageHandler();
     ~SingleImageHandler();
 
-    // Check if an image has been received
-    bool isImageReceived() const;
-
 protected:
     // Callback to set camera info
     void setCameraInfo(const sensor_msgs::CameraInfoConstPtr& camera_info_msg);
 
     // Callback for image topic
-    void topicCallback(const sensor_msgs::ImageConstPtr& received_image);
+    void setImage(const sensor_msgs::ImageConstPtr& received_image);
 
     // Camera info
     sensor_msgs::CameraInfo infoCam;
