@@ -1,191 +1,148 @@
 #include "ros_imresize/image_handler.h"
 
-#include <cv_bridge/cv_bridge.h>
-#include <ros/callback_queue.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <fstream>
-#include <nlohmann/json.hpp>
-
 using nlohmann::json;
 using namespace std;
 
-SingleImageHandler::SingleImageHandler() :
-_nh("/ros_imresize"),
-_width(0),
-_height(0),
-_undistord(),
-_resize(),
-saveCameraInfo(),
-imgTopicName(),
-infoTopicName(),
-fps(0),
-desired_path(),
-_it(_nh)
-{
+SingleImageHandler::SingleImageHandler()
+    : nh("/ros_imresize"),
+      width(0),
+      height(0),
+      undistort(false),
+      resize(false),
+      saveCameraInfo(false),
+      fps(0),
+      it(nh) {
+    // Fetch parameters with error handling
+    if (!ros::param::get("~/resize_width", width) ||
+        !ros::param::get("~/resize_height", height) ||
+        !ros::param::get("~/image_topic", imgTopicName) ||
+        !ros::param::get("~/info_topic", infoTopicName) ||
+        !ros::param::get("~/save_camera_info", saveCameraInfo) ||
+        !ros::param::get("~/fps", fps) ||
+        !ros::param::get("~/desired_path", desired_path) ||
+        !ros::param::get("~/undistort", undistort) ||
+        !ros::param::get("~/resize", resize)) {
+        ROS_ERROR("Failed to fetch one or more parameters. Shutting down.");
+        ros::shutdown();
+        return;
+    }
 
-    ros::param::get("~/resize_width", _width);
-    ros::param::get("~/resize_height", _height);
-    ros::param::get("~/image_topic", imgTopicName);
-    ros::param::get("~/info_topic", infoTopicName);
-    ros::param::get("~/save_camera_info", saveCameraInfo);
-    ros::param::get("~/fps", fps);
-    ros::param::get("~/desired_path", desired_path);
-    ros::param::get("~/undistord", _undistord);
-    ros::param::get("~/resize", _resize);
+    sub_info = nh.subscribe(infoTopicName, 1, &SingleImageHandler::setCameraInfo, this);
+    sub_img = it.subscribe(imgTopicName, 1, &SingleImageHandler::topicCallback, this);
 
-    _sub_info = _nh.subscribe(infoTopicName, 1, &SingleImageHandler::setCameraInfo, this);
+    // Modify topic names based on settings
+    imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // Remove "raw char"
+    std::string new_image_topic_name, new_info_topic_name;
 
-    _sub_img = _it.subscribe(imgTopicName, 1, &SingleImageHandler::topicCallback, this);
-
-    std::string new_image_topic_name;
-    std::string new_info_topic_name;
-    
-    imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // remove "raw char"
-
-    if (_undistord && _resize){
+    if (undistort && resize) {
         new_image_topic_name = imgTopicName + "rect_crop";
         new_info_topic_name = infoTopicName + "_crop";
         ROS_INFO("Undistortion and resize are set!");
-    }
-    else if (!_undistord && _resize){
+    } else if (!undistort && resize) {
         new_image_topic_name = imgTopicName + "raw_crop";
         new_info_topic_name = infoTopicName + "_crop";
         ROS_INFO("Resize is set!");
-    }
-    else if (_undistord && !_resize){
+    } else if (undistort && !resize) {
         new_image_topic_name = imgTopicName + "rect";
         ROS_INFO("Undistortion is set!");
-    }
-    else if (!_undistord && !_resize)
-    {
-        ROS_WARN("No resize or undistortion is set!");
+    } else {
+        ROS_WARN("No resize or undistortion is set! Shutting down.");
         ros::shutdown();
+        return;
     }
 
-    _pub_img = _it.advertise(new_image_topic_name, 1);
-
-    if (_resize)
-    {
-        _pub_info = _nh.advertise<sensor_msgs::CameraInfo>(new_info_topic_name, 1);
+    pub_img = it.advertise(new_image_topic_name, 1);
+    if (resize) {
+        pub_info = nh.advertise<sensor_msgs::CameraInfo>(new_info_topic_name, 1);
     }
-    
-    ros::Rate wrait(fps);
 
-    ROS_INFO("Waiting for camera topics ...");
+    ROS_INFO("Waiting for camera topics...");
+}
 
-    while(ros::ok())
-    {
-	ros::spinOnce();
-	wrait.sleep();
+SingleImageHandler::~SingleImageHandler() {
+    ROS_INFO("Shutting down node.");
+}
+
+void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& received_image) {
+    try {
+        cv_bridge::CvImagePtr cvPtr = cv_bridge::toCvCopy(received_image, received_image->encoding);
+        cv::Mat processed_image;
+
+        if (undistort) {
+            cv::undistort(cvPtr->image, processed_image, K, dist);
+        } else {
+            processed_image = cvPtr->image;
+        }
+
+        if (resize) {
+            cv::resize(processed_image, cvPtr->image, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
+            pub_info.publish(infoCam);
+        }
+
+        pub_img.publish(cvPtr->toImageMsg());
+
+        if (saveCameraInfo) {
+
+            char username[32];
+            cuserid(username);
+            std::string username_str(username);
+
+            if (!username) {
+                ROS_ERROR("Failed to get username. Skipping camera info save.");
+                return;
+            }
+
+            std::ofstream output_file("/home/" + std::string(username) + desired_path);
+            if (!output_file.is_open()) {
+                ROS_ERROR("Failed to open file for saving camera info.");
+                return;
+            }
+
+            json outJson;
+            outJson["K"] = std::vector<double>(infoCam.K.begin(), infoCam.K.end());
+            outJson["P"] = std::vector<double>(infoCam.P.begin(), infoCam.P.end());
+            outJson["h"] = infoCam.height;
+            outJson["w"] = infoCam.width;
+
+            output_file << outJson.dump(4);
+            output_file.close();
+
+            saveCameraInfo = false;
+            ROS_INFO("Saved new camera calibration to camera.json file.");
+        }
+    } catch (const std::exception& e) {
+        ROS_ERROR("Error in topicCallback: %s", e.what());
     }
 }
 
-SingleImageHandler::~SingleImageHandler()
-{
-    ROS_INFO("Shutdown node");
-    ros::shutdown();
-}
+void SingleImageHandler::setCameraInfo(const sensor_msgs::CameraInfoConstPtr& received_info) {
+    infoCam = *received_info;
 
-void SingleImageHandler::topicCallback(const sensor_msgs::ImageConstPtr& received_image)
-{
-    cv_bridge::CvImagePtr cvPtr;
-
-    cvPtr = cv_bridge::toCvCopy(received_image, received_image.get()->encoding);
-       
-    cv::Mat undist;
-
-    if (_undistord)
-    {
-       cv::undistort(cvPtr->image, undist, _K, _dist);
-    }
-    else
-    {
-       undist = cvPtr->image;
-    }   
-    
-    if (_resize)
-    {
-        cv::resize(undist, cvPtr->image, cv::Size(_width, _height),
-                   0, 0, cv::INTER_LINEAR);
-        _pub_info.publish(_infoCam);
+    if (undistort) {
+        K = cv::Mat::eye(3, 3, CV_32F);
+        K.at<float>(0, 0) = infoCam.K[0];
+        K.at<float>(0, 2) = infoCam.K[2];
+        K.at<float>(1, 1) = infoCam.K[4];
+        K.at<float>(1, 2) = infoCam.K[5];
+        dist = cv::Mat(infoCam.D);
     }
 
-    _pub_img.publish(cvPtr->toImageMsg());
+    if (resize) {
+        float scale_x = static_cast<float>(width) / infoCam.width;
+        float scale_y = static_cast<float>(height) / infoCam.height;
 
-    char username[32];
-    cuserid(username);
-    std::string username_str(username);
+        infoCam.K[0] *= scale_x;
+        infoCam.K[2] *= scale_x;
+        infoCam.K[4] *= scale_y;
+        infoCam.K[5] *= scale_y;
 
-    if (saveCameraInfo)
-    {
+        infoCam.P[0] *= scale_x;
+        infoCam.P[2] *= scale_x;
+        infoCam.P[5] *= scale_y;
+        infoCam.P[6] *= scale_y;
 
-        ofstream output_file("/home/" + username_str + desired_path);
-
-        json outJson;
-
-        double K [3][3] = {{_infoCam.K[0], _infoCam.K[1], _infoCam.K[2]},
-                           {_infoCam.K[3], _infoCam.K[4], _infoCam.K[5]},
-                           {_infoCam.K[6], _infoCam.K[7], _infoCam.K[8]}};
-        
-        double P [3][4] = {{_infoCam.P[0], _infoCam.P[1], _infoCam.P[2], _infoCam.P[3]},
-                           {_infoCam.P[4], _infoCam.P[5], _infoCam.P[6], _infoCam.P[7]},
-                           {_infoCam.P[8], _infoCam.P[9], _infoCam.P[10], _infoCam.P[11]}};
-
-        uint w = _infoCam.width;
-        uint h = _infoCam.height;
-
-        outJson["K"] = K;
-        outJson["P"] = P;
-        outJson["h"] = h;
-        outJson["w"] = w;
-
-        output_file << outJson.dump(4);
-        output_file.close(); 
-        
-        saveCameraInfo = false;
-        ROS_INFO("Print new camera calibration on camera.json file!");
-
-    }
-}
-
-void SingleImageHandler::setCameraInfo(const sensor_msgs::CameraInfoConstPtr &received_info)
-{
-    _infoCam = *received_info;
-
-    if (_undistord)
-    {
-        _K = cv::Mat::eye(3, 3, CV_32F);
-
-        _K.at<float>(0) = _infoCam.K[0];
-        _K.at<float>(2) = _infoCam.K[2];
-
-        _K.at<float>(4) = _infoCam.K[4];
-        _K.at<float>(5) = _infoCam.K[5];
-
-        _dist = cv::Mat(_infoCam.D);
-    }
-
-    if (_resize) {
-
-        float scale_x = (float)(_width) / (float)(_infoCam.width);
-        float scale_y = (float)(_height) / (float)(_infoCam.height);
-    
-        _infoCam.K[0] *= scale_x;
-        _infoCam.K[2] *= scale_x;
-    
-        _infoCam.K[4] *= scale_y;
-        _infoCam.K[5] *= scale_y;
-        
-        _infoCam.P[0] *= scale_x;
-        _infoCam.P[2] *= scale_x;
-    
-        _infoCam.P[5] *= scale_y;
-        _infoCam.P[6] *= scale_y;
-    
-        _infoCam.width = _width;
-        _infoCam.height = _height;
-
+        infoCam.width = width;
+        infoCam.height = height;
     }
 
     ROS_INFO_STREAM_ONCE("Camera info received!");

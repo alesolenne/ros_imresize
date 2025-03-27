@@ -1,59 +1,70 @@
 #ifndef IMAGE_HANDLER_H_
 #define IMAGE_HANDLER_H_
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+// OpenCV headers
+#include <opencv2/opencv.hpp>
 
+// ROS headers
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <message_filters/subscriber.h>
+#include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
-#include <stdio.h>
+
+// Other libraries
+#include <cv_bridge/cv_bridge.h>
+#include <nlohmann/json.hpp>
 
 class SingleImageHandler
 {
-
 public:
-
+    // Constructor and Destructor
     SingleImageHandler();
     ~SingleImageHandler();
 
-    bool isImageReceived();
+    // Check if an image has been received
+    bool isImageReceived() const;
 
 protected:
+    // Callback to set camera info
+    void setCameraInfo(const sensor_msgs::CameraInfoConstPtr& camera_info_msg);
 
-    void setCameraInfo(const sensor_msgs::CameraInfoConstPtr&);
+    // Callback for image topic
     void topicCallback(const sensor_msgs::ImageConstPtr& received_image);
 
-    sensor_msgs::CameraInfo _infoCam;
+    // Camera info
+    sensor_msgs::CameraInfo infoCam;
 
-    ros::NodeHandle _nh;
+    // ROS NodeHandle and ImageTransport
+    ros::NodeHandle nh;
 
-    image_transport::ImageTransport _it;
+    image_transport::ImageTransport it;
 
-    image_transport::Subscriber _sub_img;
-    image_transport::Publisher _pub_img;
+    // Subscribers and Publishers
+    image_transport::Subscriber sub_img;
+    image_transport::Publisher pub_img;
 
-    ros::Publisher _pub_info;
-    ros::Subscriber _sub_info;
+    ros::Publisher pub_info;
+    ros::Subscriber sub_info;
 
-    cv::Mat _K;
-    cv::Mat _dist;
+    // Camera parameters
+    cv::Mat K;  // Intrinsic camera matrix
+    cv::Mat dist;    // Distortion coefficients
 
+    // Flags
     bool saveCameraInfo;
-    bool _undistord;
-    bool _resize;
+    bool undistort;
+    bool resize;
 
-    int _width;
-    int _height;
+    // Image resizing parameters
+    int width;
+    int height;
     int fps;
 
+    // Topic and file path names
     std::string imgTopicName;
     std::string infoTopicName;
     std::string desired_path;
-
 };
 
 

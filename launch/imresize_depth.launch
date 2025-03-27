@@ -14,7 +14,7 @@
     <param name="save_camera_info" value="true" />
     <param name="desired_path" value="/catkin_ws/src/visp_megapose/params/camera.json" />
 
-    <param name="undistord" value="false" />
+    <param name="undistort" value="false" />
 
   </node>
 
