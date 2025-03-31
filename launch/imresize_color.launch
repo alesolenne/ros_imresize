@@ -14,10 +14,10 @@
     <param name="save_camera_info" value="false" />
     <param name="desired_path" value="/catkin_ws/src/visp_megapose/params/camera.json" />
 
+    <param name="convert_encoding" value="true" />
+
     <param name="undistort" value="false" />
 
   </node>
-
-  <!-- <node pkg = "image_proc" name = "image_proc1" type = "image_proc" ns='/top_right_rgbd_camera_1/rgb'/>  -->
 
 </launch>

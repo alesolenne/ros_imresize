@@ -53,6 +53,9 @@ protected:
     bool undistort;
     bool resize;
 
+    // Convert encoding
+    bool convert_encoding;
+
     // Image resizing parameters
     int width;
     int height;

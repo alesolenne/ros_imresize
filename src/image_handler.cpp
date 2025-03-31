@@ -21,6 +21,7 @@ SingleImageHandler::SingleImageHandler()
         !ros::param::get("~/fps", fps) ||
         !ros::param::get("~/desired_path", desired_path) ||
         !ros::param::get("~/undistort", undistort) ||
+        !ros::param::get("~/convert_encoding", convert_encoding) ||
         !ros::param::get("~/resize", resize)) {
         ROS_ERROR("Failed to fetch one or more parameters. Shutting down.");
         ros::shutdown();
@@ -55,7 +56,7 @@ SingleImageHandler::SingleImageHandler()
     if (resize) {
         pub_info = nh.advertise<sensor_msgs::CameraInfo>(new_info_topic_name, 1);
     }
-
+    
     ROS_INFO("Waiting for camera topics...");
 }
 
@@ -64,10 +65,21 @@ SingleImageHandler::~SingleImageHandler() {
 }
 
 void SingleImageHandler::setImage(const sensor_msgs::ImageConstPtr& received_image) {
+    
+    cv_bridge::CvImagePtr cvPtr;
+
     try {
         ROS_INFO_STREAM_ONCE("Image received!");
 
-        cv_bridge::CvImagePtr cvPtr = cv_bridge::toCvCopy(received_image, received_image->encoding);
+        if (convert_encoding)
+        {
+            cvPtr = cv_bridge::toCvCopy(received_image, sensor_msgs::image_encodings::RGB8);
+        }
+        else
+        {
+            cvPtr = cv_bridge::toCvCopy(received_image, received_image->encoding);
+        }
+
         cv::Mat processed_image;
 
         if (undistort) {
