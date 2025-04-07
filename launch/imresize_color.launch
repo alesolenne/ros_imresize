@@ -7,7 +7,7 @@
     <param name="fps" value="30" />
 
 
-    <param name="resize" value="true" />
+    <param name="resize" value="false" />
     <param name="resize_width" value="640" />
     <param name="resize_height" value="480" />
 
@@ -16,7 +16,7 @@
 
     <param name="convert_encoding" value="true" />
 
-    <param name="undistort" value="false" />
+    <param name="undistort" value="true" />
 
   </node>
 

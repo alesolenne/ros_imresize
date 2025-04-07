@@ -32,18 +32,19 @@ SingleImageHandler::SingleImageHandler()
     sub_img = it.subscribe(imgTopicName, 1, &SingleImageHandler::setImage, this);
 
     // Modify topic names based on settings
-    imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // Remove "raw char"
     string new_image_topic_name, new_info_topic_name;
 
     if (undistort && resize) {
-        new_image_topic_name = imgTopicName + "rect_crop";
-        new_info_topic_name = infoTopicName + "_crop";
+        imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // Remove "raw char"
+        new_image_topic_name = "/res" + imgTopicName + "rect";
+        new_info_topic_name = "/res" + infoTopicName;
         ROS_INFO("Undistortion and resize are set!");
     } else if (!undistort && resize) {
-        new_image_topic_name = imgTopicName + "raw_crop";
-        new_info_topic_name = infoTopicName + "_crop";
+        new_image_topic_name = "/res" + imgTopicName;
+        new_info_topic_name = "/res" + infoTopicName;
         ROS_INFO("Resize is set!");
     } else if (undistort && !resize) {
+        imgTopicName.erase(imgTopicName.end() - 3, imgTopicName.end()); // Remove "raw char"
         new_image_topic_name = imgTopicName + "rect";
         ROS_INFO("Undistortion is set!");
     } else {
