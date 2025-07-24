@@ -4,7 +4,7 @@
 
     <param name="info_topic" value="/top_right_rgbd_camera_2/depth_to_rgb/camera_info" />
     <param name="image_topic" value="/top_right_rgbd_camera_2/depth_to_rgb/image_raw" />
-    <param name="fps" value="30" />
+    <param name="fps" value="50" />
 
 
     <param name="resize" value="true" />
